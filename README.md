@@ -15,6 +15,6 @@ $ python changeAutomove 3 <ip_of_machine_running_memc>
 - Congrats! you have now memcached running with your own algorithm for automove.
 
 ## Some Additional Features
-We Also have added some code for more detailed stats about different slabs in memcached, to support some advacned automove algorithms. If you are interested in that, feel free to raise a github issue.
+To suppport some advanced auto-move algorithms, we have added some code for more detailed stats about different slabs in memcached. If you are interested in that, feel free to raise a github issue.
 
 
