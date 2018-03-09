@@ -1,0 +1,99 @@
+/*
+ * **** PACE LAB ****
+ * This document is part of advanced project work 
+ * and explains following:
+ * 1. Current implementation of slab automove in vanilla memcached.
+        (slab_automove, slab_reassign)
+ * 2. Possible parameters to determine hottest or coldest pages to swap.
+ * 3. Related previous work to solve Calcification (Damiano Paper)
+ * 4. Custom automove algorithm and implementation
+ *
+ */
+
+Problem of Calcification in Memcached:
+    Memcached uses slab mechanism for memory allocation and
+    management. According to the size of the request object, the
+    object is placed in corresponding slab class chunk. Every time
+    a slab class needs memory, it's allocated one memory page of 
+    1MB from free pool. Once all available memory allocated to 
+    Memcached go out, the change of distribution of request 
+    will cause miss rate of hottest slab class increase because of
+    insufficient memory. Ideally the pages have to be reassigned from
+    coldest slab class to hottest slab class. Hotness of slab class
+    can be determined using many parameters.
+
+1. Vanilla Memcached Automove:
+    By default memcached is set to 1 (Vanilla automove)
+    Maintainer thread running in background triggers slab_automove
+    to determine coldest slab and hottest slabs.
+    Slab_reassign when provided with hottest slab and coldest slabs;
+    moves first page from coldest slab to hottest slabs.
+    This way slab_automove is called after every interval and if movable
+    pages are found, slab_reassign moves the page.
+
+    For vanilla memcached automove(automove = 1), function  slab_automove_run()
+    has the algorithm to decide src(coldest slab class) and dest(hottest).
+
+    slab class statistics like age of slab_class(age of oldest item), evictions
+    are monitored and averaged over a window(default: 64) of time intervals.
+
+    Based on age, we find oldest and youngest slab classes over a period of
+    window of intervals.
+    if youngest_age < ((double)oldest_age * a->max_age_ratio), vanilla marks
+        youngest as dest and oldest as src.
+
+    Hence, the proactive slab reassignment can be controlled using two parameters:
+    a. window_size.
+    b. max_age_ratio.
+
+2. Possible parameters to determine hottest or coldest pages to swap:
+    Chunk size: chunk size of each slab class. Bigger the size, smaller the 
+                items a single page can accommodate and hence less effect
+                on improving hit rate.
+
+    misses per class: As distribution change, number of misses denote the hotness
+                      of a slab class in the new distribution.
+
+    hits per page: Aggregate sum of all hits of items in a page denote the effect
+                    on hitrate when that page is reallocated to other class.
+
+    average access time of all items in a page: This indicates the hotness of a page
+                    in terms of access time.
+
+    LRA / MRA page: LRA(least recently accessed) or MRA order of pages in a slab class
+                    can help us decide which page from coldest slab to remove.
+
+    Evictions: Number of evictions in a time interval denotes the hotness of slab class
+                or recency of lru_queue items.
+
+3. Related previous work to solve Calcification (Damiano Paper):
+    Related work to solve Memcached calcification is studied:
+    PSA algorithm:
+        PSA “moves” a single slab from the class
+        with the lower risk of increasing the number of misses to the
+        one that has registered the largest number of misses
+    They have implemented on a different version of memcached - Twitter memcached.
+    References:
+        http://profs.sci.univr.it/~carra/mctools/memcached_partitioning.pdf
+        https://github.com/twitter/twemcache
+        code changes at https://github.com/snaeni/Twitter-MemcachedRepo/commit/4f82364e5c5f3c325a9d56618e391468a42326df
+        (Access to Anshul and Wajahat)
+
+4. Custom automove algorithm and implementation:
+
+    Using our implementation of custom_automove_run(), we have tried out two algorithms
+    to decide coldest page and hottest slabs.
+    1. page hit rate.
+    2. average page access time.
+    In every iteration (triggered by maintainer thread), we crawl all items
+    and calculate average hitrate per page or average accesstime of a page.
+    Using this stats, we find the coldest page out of all pages.
+    Using factor avg_miss_rate = (misses of a slab class / total pages of class)
+    we find the hottest slab class with highest avg_miss_rate.
+
+    We swap pointers of coldest page with first page of coldest slab
+
+GitHub: https://github.com/PACELab/mem_calcification
+Experimental setup : mem_calcification/memcached-1.5.1/doc/Calcification/ExperimentalSetup.txt
+Calcification_notes.txt: mem_calcification/memcached-1.5.1/doc/Calcification/Calcification_Notes.txt
+Automation scripts: mem_calcification/memcached-1.5.1/scripts/Calcification/*

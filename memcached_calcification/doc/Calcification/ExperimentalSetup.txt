@@ -1,0 +1,41 @@
+Note:
+*  Make sure ssh keys(compass.key) is available in the appropriate locations(~/keys/compass.key) whenever there is ssh or scp calls in automation script. 
+*  Make sure that the memcached source code is copied and built on directory '/home/ubuntu/mem_calcification/memcached-1.5.1' on all memcache servers.
+*  We assume that httperf is in the following location on the same machine as that of this repo -
+        /home/ubuntu/LoadGen/httperf-master/httperf-master 
+* Copy memcache_calci_from_traces.php and memcache_calci_to_trace.php(which are in scripts/Calcification folder on git
+ repo) to the follwing location on webserver -
+
+                        /var/www/html
+           
+           Note: Make sure to change the trace file name in memcache_calci_to_trace.php as needed for the experiment.
+
+* Copy automate_uris.sh and generateSplit.sh(which are in scripts/Calcification folder on git repo) to /home/ubuntu fo
+lder on webserver 
+* We use the following command to run an instance of memcached for all the calcification experiments
+
+  sudo ./memcached -d -m $mcMem -r -c 32768 -u ubuntu -o no_chunked_items 
+
+  We disable chunked items(chunked items was causing crashes).
+
+1. Collecting large traces
+	a. Open memcache_calci_to_trace.php and modify the file name to write the trace to
+        b. Also, modify the for loop variables according to the distribution required.
+	c. Run the below command on loadgen (here webserver is 192.168.0.78)
+	 
+		./src/httperf --server 192.168.0.78 --uri /memcache_calci_to_trace.php --rate 2000 --num-conn 100000
+	
+	d. Monitor the hitrate with the below awk script on web server and kill the httperf when the hitrate converges
+		
+		while true; do tail -n 200 /var/tmp/mymsg.log | awk '{sum+=$4}END{print sum/NR}'; sleep 10; done
+		
+2. Splitting the traces into small traces and generating uris.log file
+	a. Run the following command on webserver to generate a .log file with 20(can be changed) splits of trace file and move it to loadgen
+
+		sh automate_uris.sh dist_50_50.trace trace_50_50_ 20 uris_temp.log
+
+	Refer automate_uris.sh for a detailed documentation on what it does.	
+
+3. Running the automation script (Calcification/scripts/)
+	
+	sh automateCalciExperiment.sh -d nov27_dist2_90_10-10_90 -wlog1 ~/uris_NewDist_90_10.log -wlog2 ~/uris_NewDist_10_90.log
