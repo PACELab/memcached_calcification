@@ -7,10 +7,10 @@ It only requires all the dependencies for memcahed to run which can be found at:
 ## How to Use it ?
 - Go to **memcached_calcification/slab_automove.c** and implement the algorithm you want to use. 
 - Do a makeclean and make.
-- To Launch memcached, just to "./memcached" and provide your desired command line arguments
+- To Launch memcached, just to "./memcached" and provide your desired command line arguments (do not change the port, default is 11211)
 - Now, to tell memcahced to use your own custom auto-move algorithm, use **scripts/changeAutomove.py** placed under the scripts folder:  
 ```
-$ python changeAutomove 3 <ip_of_machine_running_memc>
+$ python changeAutomove <ip_of_machine_running_memc> 3
 ```
 - Congrats! you now have memcached running with your own algorithm for automove.
 
