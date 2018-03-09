@@ -12,7 +12,7 @@ It only requires all the dependencies for memcahed to run which can be found at:
 ```
 $ python changeAutomove 3 <ip_of_machine_running_memc>
 ```
-- Congrats! you have now memcached running with your own algorithm for automove.
+- Congrats! you now have memcached running with your own algorithm for automove.
 
 ## Some Additional Features
 To suppport some advanced auto-move algorithms, we have added some code for more detailed stats about different slabs in memcached. If you are interested in that, feel free to raise a github issue.
