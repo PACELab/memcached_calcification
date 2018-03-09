@@ -1,5 +1,5 @@
 # Memcached with Custom Auto-Move
-A modified Memcached 1.5.1 that allows user to use their own algorithms for auto-move to handle Calcification better 
+A modified Memcached 1.5.1 that allows user to use their own algorithms for auto-move to handle Calcification.
 
 ## Dependencies
 It only requires all the dependencies for memcahed to run which can be found at: https://github.com/memcached/memcached/wiki/Install 
